@@ -1,0 +1,1 @@
+## Objective: This script generates multiple plots associated to model fits and predictions, including maps and climatologies
