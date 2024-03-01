@@ -164,11 +164,11 @@ data_melt['SLA']=data_melt.SLA-np.nanmean(data_melt.SLA)
 for taxa in data_melt.PFT.unique():
     for var in ['PSD_slope', 'Picophytoplankton', 'Nanophytoplankton', 'Microphytoplankton', 'CHL', 'Temperature', 'PAR', 'AOU', 'Nitrates', 'Phosphates', 'Silicates', 'Iron', 'Aerosol_thickness', 'DUWT001', 'SLA', 'FSLE', 'MLD']:
         var = var + '/1000' if var.split('/')[0] in '\t'.join(['Nitrates', 'Phosphates','Silicates']) else var  # Nutrients are expressed in cubic meters to integrate over depth
-        axis_trans = 'log10' if var.split('/')[0] in '\t'.join(['CHL', 'Nitrates', 'Phosphates', 'Silicates', 'Iron']) else 'identity'# 'sqrt' if var in '\t'.join(['Picophytoplankton', 'Nanophytoplankton', 'Microphytoplankton']) else 'identity'
+        axis_trans = 'log10' if var.split('/')[0] in '\t'.join(['CHL', 'Nitrates', 'Phosphates', 'Silicates', 'Iron','DUWT001','AOU']) else 'identity'# 'sqrt' if var in '\t'.join(['Picophytoplankton', 'Nanophytoplankton', 'Microphytoplankton']) else 'identity'
         plot = (ggplot(data_melt.query('PFT=="{}"'.format(taxa))) +
                 facet_grid('variable~PFT', scales='free', space='free') +
                 geom_point(mapping=aes(x='{}'.format(var), y='value', size='CHL'), fill='#{:02x}{:02x}{:02x}{:02x}'.format(0, 0, 0, 0),color='black') +
-                scale_size_area(max_size=5) +  # scale_x_continuous(limits=LIMITS,trans=axis_trans)+ #
+                scale_size_area(max_size=5) +   scale_x_continuous(trans=axis_trans)+ #
                 labs(y=r'', x=' '.join(var.split('_')), size='') +
                 theme_paper ).draw(show=True)
         plot.set_size_inches(1.2 * 2 * 1, 6)  # len(data_melt['group'].unique())
@@ -179,9 +179,9 @@ env_group = ['Instrument', 'PFT', 'Total_abundance', 'Min_size', 'Max_size', 'In
 env_group = [column for column in env_group if column in nbss_summary.columns]
 data=data.dropna(subset=env_group)
 data_pval = data[env_group].groupby(env_group[0:2]).corr(method=lambda x, y: spearman_correlation(x, y)) - np.tile(np.eye(data[env_group].groupby(env_group[0:2]).corr(method=lambda x, y: spearman_correlation(x, y)).shape[1], data[env_group].groupby(env_group[0:2]).corr(method=lambda x, y: spearman_correlation(x, y)).shape[1]), int(data[env_group].groupby(env_group[0:2]).corr(method=lambda x, y: spearman_correlation(x, y)).shape[0] / data[env_group].groupby(env_group[0:2]).corr(method=lambda x, y: spearman_correlation(x, y)).shape[1])).T
-data_pval = data_pval.where( np.tile(np.triu(np.ones(pval.iloc[0:pval.shape[1]].shape)).astype(bool), int(pval.shape[0] / pval.shape[1])).T)
+data_pval = data_pval.where( np.tile(np.triu(np.ones(data_pval.iloc[0:data_pval.shape[1]].shape)).astype(bool), int(data_pval.shape[0] / data_pval.shape[1])).T)
 p = data_pval.applymap(lambda x: ''.join(['*' for t in [.05, .01, .001] if x <= t]))
-data_summary = pd.merge(data[env_group].groupby(env_group[0:2]).corr(method='spearman').where(np.tile(np.triu(np.ones(pval.iloc[0:pval.shape[1]].shape)).astype(bool), int(pval.shape[0] / pval.shape[1])).T).melt(ignore_index=False).reset_index().set_axis(labels=env_group[0:2] + ['var1', 'var2', 'value'], axis=1), p.melt(ignore_index=False).reset_index().set_axis(labels=env_group[0:2] + ['var1', 'var2', 'pvalue'], axis=1), how='left', on=env_group[0:2] + ['var1', 'var2'])
+data_summary = pd.merge(data[env_group].groupby(env_group[0:2]).corr(method='spearman').where(np.tile(np.triu(np.ones(data_pval.iloc[0:data_pval.shape[1]].shape)).astype(bool), int(data_pval.shape[0] / data_pval.shape[1])).T).melt(ignore_index=False).reset_index().set_axis(labels=env_group[0:2] + ['var1', 'var2', 'value'], axis=1), p.melt(ignore_index=False).reset_index().set_axis(labels=env_group[0:2] + ['var1', 'var2', 'pvalue'], axis=1), how='left', on=env_group[0:2] + ['var1', 'var2'])
 data_summary = data_summary.assign(lab_text=lambda x: np.round(x.value, 2).astype(str) + x['pvalue'])
 data_summary['var1'] = pd.Categorical(data_summary.var1, ordered=True, categories=['Total_abundance', 'Min_size', 'Max_size', 'Intercept', 'Slope'][ ::-1] + ['PSD_slope', 'Picophytoplankton', 'Nanophytoplankton','Microphytoplankton', 'Temperature', 'CHL', 'MLD', 'PAR','AOU', 'Nitrates', 'Phosphates', 'Silicates', 'Iron', 'Aerosol_thickness', 'DUWT001', 'SLA', 'FSLE'][::-1])
 data_summary['var2'] = pd.Categorical(data_summary.var2, ordered=True,categories=['Total_abundance', 'Min_size', 'Max_size', 'Intercept', 'Slope'] + ['PSD_slope','Picophytoplankton', 'Nanophytoplankton', 'Microphytoplankton','Temperature','CHL', 'MLD','PAR','AOU','Nitrates','Phosphates','Silicates','Iron','Aerosol_thickness','DUWT001', 'SLA','FSLE'][ ::-1])
@@ -189,13 +189,13 @@ data_summary = data_summary[(data_summary.var2.isin(['Total_abundance', 'Min_siz
 data_summary['p_value'] = data_summary.groupby(['PFT', 'var1']).apply(lambda x: pd.DataFrame({'p_value': np.where((x['pvalue'].str.len() == max(x['pvalue'].str.len())) & (np.abs(x.value) == max(np.abs(x.value))), x.pvalue, '')},index=x.index))
 data_summary['p_value'] = data_summary.groupby(['PFT', 'var1']).apply(lambda x: pd.DataFrame({'p_value': np.where((x['pvalue'].str.len() == max(x['pvalue'].str.len())) & (np.abs(x.value) == max(np.abs(x.value))), x.pvalue, '')[ (x['pvalue'].str.len() == max(x['pvalue'].str.len())) & (np.abs(x.value) == max(np.abs(x.value)))][0]}, index=x.index))
 
-plot = (ggplot(data_summary) +
+plot = (ggplot(data_summary.query('var2.isin(["Intercept","Slope"])')) +
         facet_wrap('~PFT', ncol=1) +
-        geom_col(mapping=aes(x='var1', y='value', group='var2', fill='value'), stat='identity', position='dodge',show_legend=False, color='black', size=0.01) +
+        geom_col(mapping=aes(x='var1', y='value', group='var2', fill='var2'), stat='identity', position='dodge',show_legend=False, color='black', size=0.01,alpha=.6) +
         geom_text(mapping=aes(x='var1', y='value', group='var2', label='pvalue', nudge_y='-0.1+1*(value>0)'), color='black', family='Times New Roman', size=8, angle=90, position=position_dodge(width=1)) +
         labs(x=r'', y=r'Spearman correlation coefficient', fill='') +
-        scale_fill_gradientn(colors=list((sns.color_palette("RdBu", 4).as_hex()))[::-1], limits=[-1, 1],na_value="#ffffff00") +
-        theme_paper+theme(axis_text_x=element_text(angle=-45,ha='left'))).draw(show=True)
+        scale_fill_manual(values={'Intercept':'#{:02x}{:02x}{:02x}'.format(226,219,227),'Slope':'#{:02x}{:02x}{:02x}'.format(183,190,200)}) +
+        theme_paper+theme(panel_grid_minor_x=element_line(color='black'),axis_text_x=element_text(angle=-45,ha='left'))).draw(show=True)
 plot.set_size_inches(5.5, 5.6)
 plot.savefig(fname='{}/figures/PSSdb_paper/Environmental_correlation_NBSS.svg'.format(str(path_to_git)),dpi=300, bbox_inches='tight')
 
@@ -243,9 +243,15 @@ print(xr)
 xr.to_netcdf('{}/Model_environment.nc'.format(str(path_to_input)))
 
 # Plot climatologies
-df_env_all = df_environement.dropna().reset_index(drop=True)
+df_env_all = xr.open_dataset('{}/Model_environment.nc'.format(str(path_to_input))).to_dataframe().reset_index().dropna()#df_environement.dropna().reset_index(drop=True)
+df_env_all=pd.merge(df_env_all,df_env_all.drop_duplicates(subset=['Longitude', 'Latitude'], ignore_index=True)[['Longitude', 'Latitude']].reset_index().rename( {'index': 'Group_index'}, axis='columns'),how='left',on=['Longitude', 'Latitude'])
+gdf = gpd.GeoDataFrame(df_env_all[['Group_index','Longitude', 'Latitude']].drop_duplicates().dropna(), geometry=gpd.points_from_xy( df_env_all[['Group_index', 'Longitude', 'Latitude']].drop_duplicates().dropna().Longitude,df_env_all[['Group_index','Longitude', 'Latitude']].drop_duplicates().dropna().Latitude))
+df_env_all['Study_area'] = pd.merge(df_env_all, gpd.tools.sjoin(gdf, oceans, predicate="within", how='left')[['Group_index', 'name']], how='left',on='Group_index')['name'].astype(str)
+df_env_all['Longhurst_area'] = pd.merge(df_env_all, gpd.tools.sjoin(gdf, longhurst, predicate="within", how='left')[['Group_index', 'ProvDescr']], how='left',on='Group_index')['ProvDescr'].astype(str)
+df_env_all['Longhurst_subarea'] = df_env_all.Longhurst_area.replace(longhurst_dict)
+df_env_all['Hemisphere'] = np.where(df_env_all.Latitude.astype(float)>0,'North','South')
 df_env_all['Region']=df_env_all.Study_area+'\n'+df_env_all.Longhurst_subarea
-df_env_all['month']=df_env_all.Month.apply(lambda month: strptime(month, '%B').tm_mon)
+df_env_all['month']=df_env_all.Datetime.str[5:]
 for var in ['PSD_slope', 'Picophytoplankton', 'Nanophytoplankton', 'Microphytoplankton', 'CHL', 'Temperature', 'PAR','AOU', 'Nitrates', 'Phosphates', 'Silicates', 'Iron', 'Aerosol_thickness', 'DUWT001', 'SLA', 'FSLE', 'MLD']:
     var = var + '/1000' if var.split('/')[0] in '\t'.join(['Nitrates', 'Phosphates', 'Silicates']) else var  # Nutrients are expressed in cubic meters to integrate over depth
     axis_trans = 'log10' if var.split('/')[0] in '\t'.join(['CHL', 'Nitrates', 'Phosphates', 'Silicates', 'Iron','DUWT001']) else 'identity'  # 'sqrt' if var in '\t'.join(['Picophytoplankton', 'Nanophytoplankton', 'Microphytoplankton']) else 'identity'

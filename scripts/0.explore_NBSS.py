@@ -22,7 +22,7 @@ nbss_class=pd.concat(map(lambda path:pd.read_csv(path).assign(Instrument=path.na
 # Filter out observations that do not span at least 80% of the euphotic layer & where mesophytoplankton is dominated by chains of neritic diatoms
 group = ['Instrument','latitude','longitude','ocean','year','month']
 nbss_stat=nbss_class.groupby(group+['Taxon']).normalized_biovolume_mean.sum().reset_index()
-nbss_stat=nbss_stat.query('(Instrument=="UVP") & (Taxon.isin(["Bacillariophyceae","Cyanophyceae"]))').groupby(['latitude','longitude','Taxon']).mean().reset_index().groupby(['latitude','longitude']).apply(lambda x:x.loc[x.normalized_biovolume_mean.idxmax(),'Taxon']=='Bacillariophyceae')
+nbss_stat=nbss_stat.query('(Instrument=="UVP") & (Taxon.isin(["Bacillariophyceae","Cyanophyceae"]))').groupby(['latitude','longitude','Taxon']).mean().reset_index()#.groupby(['latitude','longitude']).apply(lambda x:x.loc[x.normalized_biovolume_mean.idxmax(),'Taxon']=='Bacillariophyceae')
 nbss_stat['selection']=nbss_stat.groupby(['latitude','longitude']).apply(lambda x: pd.DataFrame({'selected':x.loc[x.normalized_biovolume_mean.idxmax(), 'Taxon'] == 'Cyanophyceae'},index=x.index)).reset_index()[['selected']]
 
 plot = (ggplot(nbss_stat) +
@@ -80,7 +80,7 @@ data=pd.concat([nbss_summary[(nbss_summary.PFT=='Crustaceans') & (nbss_summary.I
 plot = (ggplot(data) +
         facet_wrap('~PFT', ncol=1) +
         geom_polygon(data=world_polygon, mapping=aes(x='Longitude', y='Latitude', group='Country'), color='black', fill='black') +
-        geom_point(mapping=aes(x='longitude', y='latitude', size='Absolute_intercept',shape='Absolute_intercept.isna()',fill='Absolute_intercept.isna()'), alpha=1,color='#ffffff00') +
+        geom_point(mapping=aes(x='longitude', y='latitude', size='Absolute_intercept',shape='Absolute_intercept.isna()',fill='Absolute_intercept.isna()'), alpha=1,color='black') +
         labs(x=r'Longitude ($^{\circ}$E)', y=r'Latitude ($^{\circ}$N)', fill='', title='') +
         scale_fill_manual(values={True: "black", False: '#78214458'})+
         scale_size_area(trans='log10',max_size=3, na_value=1) + scale_shape_manual(limits=[True, False], values={True: "x", False: "o"},guide=None) +

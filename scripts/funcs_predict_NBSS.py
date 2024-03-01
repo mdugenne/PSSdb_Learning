@@ -45,7 +45,7 @@ import cdsapi # In terminal : touch ~/.cdsapirc
 # pip install cdsapi
 
 import yaml
-path_to_git=Path('~/GIT/PSSdb_model').expanduser()
+path_to_git=Path('~/GIT/PSSdb_Learning').expanduser()
 path_to_config = path_to_git / 'scripts' / 'Configuration_masterfile.yaml'
 with open(path_to_config, 'r') as config_file:
     cfg_pw = yaml.safe_load(config_file)
