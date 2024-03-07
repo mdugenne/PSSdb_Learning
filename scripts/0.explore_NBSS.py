@@ -15,10 +15,11 @@ except:
     from scripts.funcs_predict_NBSS import *
 
 ## Workflow starts here:
-path_to_datafile=path_to_git / 'data' /'NBSS_ver_12_2023'
-nbss=pd.concat(map(lambda path:pd.read_csv(path).assign(Instrument=path.name.split('_')[0]),list(Path(path_to_datafile /'PFT').expanduser().glob('*_1a_Size-distribution*.csv')))).reset_index(drop=True)
-nbss_class=pd.concat(map(lambda path:pd.read_csv(path).assign(Instrument=path.name.split('_')[0]),list(Path(path_to_datafile /'Class').expanduser().glob('*_1a_Size-distribution*.csv')))).reset_index(drop=True)
 
+# Load products 1a and convert NBSS units to particles per cubic meters to fit the range of abundances of mesoplankton
+path_to_datafile=path_to_git / 'data' /'NBSS_ver_03_2024'
+nbss=pd.concat(map(lambda path:pd.read_csv(path).assign(Instrument=path.name.split('_')[0]),list(Path(path_to_datafile /'PFT').expanduser().glob('*_1a_Size-distribution*.csv')))).reset_index(drop=True).assign(normalized_biovolume_mean=lambda x:x.normalized_biovolume_mean*1e+03)
+nbss_class=pd.concat(map(lambda path:pd.read_csv(path).assign(Instrument=path.name.split('_')[0]),list(Path(path_to_datafile /'Class').expanduser().glob('*_1a_Size-distribution*.csv')))).reset_index(drop=True).assign(normalized_biovolume_mean=lambda x:x.normalized_biovolume_mean*1e+03)
 # Filter out observations that do not span at least 80% of the euphotic layer & where mesophytoplankton is dominated by chains of neritic diatoms
 group = ['Instrument','latitude','longitude','ocean','year','month']
 nbss_stat=nbss_class.groupby(group+['Taxon']).normalized_biovolume_mean.sum().reset_index()
@@ -48,15 +49,15 @@ nbss_subset=nbss[(nbss.PFT.isin(group_taxa))].reset_index(drop=True)
 # Use ggplot to plot group-specific Normalized Biovolume Size Spectrum and NBSS integral histograms:
 plot = (ggplot(nbss_subset.dropna(subset=['normalized_biovolume_mean'])) +
         facet_grid('PFT~Instrument',scales='free_x') +
-        geom_line(mapping=aes(x='equivalent_circular_diameter_mean', y='normalized_biovolume_mean*1e+03', group='Group_index'), size=0.17, alpha=1) + #
-        geom_point(mapping=aes(x='equivalent_circular_diameter_mean', y='normalized_biovolume_mean*1e+03', group='Group_index'), size=0.07, alpha=1) +  #
+        geom_line(mapping=aes(x='equivalent_circular_diameter_mean', y='normalized_biovolume_mean', group='Group_index'), size=0.17, alpha=1) + #
+        geom_point(mapping=aes(x='equivalent_circular_diameter_mean', y='normalized_biovolume_mean', group='Group_index'), size=0.07, alpha=1) +  #
         labs(x='Equivalent circular diameter (µm)',y='Normalized Biovolume Size Spectrum (mm$^{3}$ m$^{-3}$ mm$^{-3}$)', title='',colour='') +
         scale_x_log10(limits=[1e+02, 5e+04], expand=(0, 0), breaks=np.multiply( 10 ** np.arange(np.floor(np.log10(1e+02)), np.ceil(np.log10(5e+04)), step=1).reshape( int((np.ceil(np.log10(1e+02)) - np.floor(np.log10(5e+04)))), 1), np.arange(1, 10, step=1).reshape(1, 9)).flatten(), labels=lambda l: ['x10$^%s$' % round(np.floor(np.log10(v))) if ((v / (10 ** np.floor(np.log10(v)))) == 1) else '%s' % round( v / (10 ** np.floor(np.log10(v)))) for v in l]) +
-        scale_y_log10(limits=[1e-01, 1e+03], breaks=10 ** np.arange(np.floor(np.log10(1e-05)) - 1, np.ceil(np.log10(1e+03)), step=1), labels=lambda l: ['10$^{%s}$' % int(np.log10(v)) if (np.log10(v)) / int(np.log10(v)) == 1 else '10$^{0}$' if v==1 else '' for v in l]) +
+        scale_y_log10(limits=[1e-1, 1e+03], breaks=10 ** np.arange(np.floor(np.log10(1e-01)) - 1, np.ceil(np.log10(1e+03)), step=1), labels=lambda l: ['10$^{%s}$' % int(np.log10(v)) if (np.log10(v)) / int(np.log10(v)) == 1 else '10$^{0}$' if v==1 else '' for v in l]) +
         theme_paper).draw(show=True)
 plot.set_size_inches(4.5,5)
 plot.savefig(fname='{}/figures/PSSdb_paper/NBSS_products_1a_PFT.svg'.format(str(path_to_git)), dpi=300, bbox_inches='tight')
-plot = (ggplot(nbss_subset.groupby(group+['Group_index','PFT']).apply(lambda x:pd.Series({'Total_abundance':(1e+03)*x.normalized_biovolume_mean.sum(min_count=0)})).reset_index()) +
+plot = (ggplot(nbss_subset.groupby(group+['Group_index','PFT']).apply(lambda x:pd.Series({'Total_abundance':x.normalized_biovolume_mean.sum(min_count=0)})).reset_index()) +
         facet_grid('PFT~Instrument',scales='free_x') +
         geom_histogram(mapping=aes(x='Total_abundance+1',y=after_stat('count')), alpha=1,binwidth=0.5,fill='black') + #
         stat_bin(mapping=aes(x='Total_abundance+1',y=after_stat('count'),label=after_stat('count'),group=1),geom='text', alpha=1,binwidth=0.5,angle=-90, size=4, format_string='{:.1f}')+ #
@@ -72,7 +73,7 @@ plot.savefig(fname='{}/figures/PSSdb_paper/Histogram_NBSS_integral.svg'.format(s
 # Extract NBSS parameters - no thresholding is performed since the thresholding was already applied for products generation
 uncertainty_threshold=1#0.2
 bins=1#3
-nbss_summary=nbss_subset.assign(NBSS=lambda x:1e+03*x.normalized_biovolume_mean).rename(columns={'equivalent_circular_diameter_mean':'size_class_mid'}).groupby(group+['Group_index','PFT'],dropna=False).apply(lambda x: pd.DataFrame(NBSS_regression(nbss=x,selection='indexing',threshold_count=uncertainty_threshold,threshold_size=uncertainty_threshold,n_bins=bins),index=[0])).reset_index().drop(columns='level_{}'.format(len(group+['Group_index','PFT'])))
+nbss_summary=nbss_subset.rename(columns={'equivalent_circular_diameter_mean':'size_class_mid'}).groupby(group+['Group_index','PFT'],dropna=False).apply(lambda x: pd.DataFrame(NBSS_regression(nbss=x,selection='indexing',threshold_count=uncertainty_threshold,threshold_size=uncertainty_threshold,n_bins=bins),index=[0])).reset_index().drop(columns='level_{}'.format(len(group+['Group_index','PFT'])))
 nbss_summary=nbss_summary.assign(Absolute_intercept=np.where(nbss_summary.Intercept!=0,10**nbss_summary.Intercept,0))
 data=pd.concat([nbss_summary[(nbss_summary.PFT=='Crustaceans') & (nbss_summary.Instrument=='Scanner')],nbss_summary[(nbss_summary.PFT.isin(['Rhizaria','Mesophytoplankton'])) & (nbss_summary.Instrument=='UVP')]],axis=0)
 

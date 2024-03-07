@@ -168,7 +168,7 @@ for taxa in data_melt.PFT.unique():
         plot = (ggplot(data_melt.query('PFT=="{}"'.format(taxa))) +
                 facet_grid('variable~PFT', scales='free', space='free') +
                 geom_point(mapping=aes(x='{}'.format(var), y='value', size='CHL'), fill='#{:02x}{:02x}{:02x}{:02x}'.format(0, 0, 0, 0),color='black') +
-                scale_size_area(max_size=5) +   scale_x_continuous(trans=axis_trans)+ #
+                scale_size_area(max_size=5) +  scale_x_continuous(trans=axis_trans)+ #
                 labs(y=r'', x=' '.join(var.split('_')), size='') +
                 theme_paper ).draw(show=True)
         plot.set_size_inches(1.2 * 2 * 1, 6)  # len(data_melt['group'].unique())
@@ -218,29 +218,29 @@ df_environement['Longhurst_subarea'] = df_environement.Longhurst_area.replace(lo
 df_environement['Hemisphere'] = np.where(df_environement.Latitude.astype(float)>0,'North','South')
 
 # Generate a netcdf xarray from Pandas DataFrame
-xr=df_env_all.rename(columns={'Date_bin':'Datetime'}).drop(columns=['Month','Oxygen','Salinity']).astype({'Latitude':float,'Longitude':float}).set_index(['Latitude', 'Longitude','Datetime']).to_xarray()
-xr['Latitude'].attrs={'units':'decimal_degrees','description':'Midpoint of the 1 degree latitudinal grid'}
-xr['Longitude'].attrs={'units':'decimal_degrees','description':'Midpoint of the 1 degree longitudinal grid'}
-xr['Datetime'].attrs={'units':'%Y-%m','description':'Monthly average corresponding to the final resolution of PSSdb products'}
-xr['AOU'].attrs={'units':'micromoles','long_name':'Apparent Oxygen Utilization','description':'Surface concentration of apparent oxygen utilization from World Ocean Atlas'}
-xr['MLD'].attrs={'units':'meters','long_name':'Mixed Layer Depth','description':'Mixed Layer Depth from World Ocean Atlas'}
-xr['Phosphates'].attrs={'units':'micromoles','description':'Surface concentration of phosphate from World Ocean Atlas'}
-xr['Nitrates'].attrs={'units':'micromoles','description':'Surface concentration of nitrate from World Ocean Atlas'}
-xr['Silicates'].attrs={'units':'micromoles','description':'Surface concentration of silicate from World Ocean Atlas'}
-xr['Temperature'].attrs={'units':'degrees_celsius','description':'Sea surface temperature from World Ocean Atlas'}
-xr['Iron'].attrs={'units':'micromoles','description':'Surface concentration of dissolved iron coumpounds from the biogeochemical model PISCES'}
-xr['CHL'].attrs={'units':'milligram per cubic meters','description':'Surface concentration of chlorophyll-a measured from satellite'}
-xr['SLA'].attrs={'units':'meters','long_name':'Sea Level Anomaly','description':'Sea Level Anomaly measured from satellite'}
-xr['PAR'].attrs={'units':'mole einstein per square meter per day','long_name':'Photosynthetically Available Radiance','description':'Surface light intensity measured from satellite'}
-xr['Aerosol_thickness'].attrs={'units':'unitless','long_name':'Aerosol optical thickness','description':'Proxy for surface emission of Fe-rich aerosols measured from satellite'}
-xr['DUWT001'].attrs={'units':'kilogram per square meter per second','long_name':'Wet Dust Deposition Bin 001','description':'Proxy for surface deposition of wet dust measured from satellite'}
-xr['PSD_slope'].attrs={'units':'particles per liter per square micrometers','long_name':'Particle Size Distribution Slope','description':'Slope of the particle size distribution measured from satellite'}
-xr['Picophytoplankton'].attrs={'units':'unitless','long_name':'Fraction of picophytoplankton','description':'Fraction of picophytoplankton measured from satellite'}
-xr['Nanophytoplankton'].attrs={'units':'unitless','long_name':'Fraction of nanophytoplankton','description':'Fraction of nanophytoplankton measured from satellite'}
-xr['Microphytoplankton'].attrs={'units':'unitless','long_name':'Fraction of microphytoplankton','description':'Fraction of microphytoplankton measured from satellite'}
-xr.attrs={'creation':'Dataset generated on Sept 2023 by M. Dugenne', 'title':'Full environmental dataset used to predict the spectral biogeography of mesoplankton in the Global Ocean', 'summary':'This dataset represents the set of explanatory variables used to predict mesoplankton spectral biogeography as part of the Pelagic Sie Structure database project (https://pssdb.net)'} # add global attribute metadata
-print(xr)
-xr.to_netcdf('{}/Model_environment.nc'.format(str(path_to_input)))
+array=df_env_all.rename(columns={'Date_bin':'Datetime'}).drop(columns=['Month','Oxygen','Salinity']).astype({'Latitude':float,'Longitude':float}).set_index(['Latitude', 'Longitude','Datetime']).to_xarray()
+array['Latitude'].attrs={'units':'decimal_degrees','description':'Midpoint of the 1 degree latitudinal grid'}
+array['Longitude'].attrs={'units':'decimal_degrees','description':'Midpoint of the 1 degree longitudinal grid'}
+array['Datetime'].attrs={'units':'%Y-%m','description':'Monthly average corresponding to the final resolution of PSSdb products'}
+array['AOU'].attrs={'units':'micromole per cubic meter','long_name':'Apparent Oxygen Utilization','description':'Surface concentration of apparent oxygen utilization from World Ocean Atlas'}
+array['MLD'].attrs={'units':'meters','long_name':'Mixed Layer Depth','description':'Mixed Layer Depth from World Ocean Atlas'}
+array['Phosphates'].attrs={'units':'micromole per cubic meter','description':'Surface concentration of phosphate from World Ocean Atlas'}
+array['Nitrates'].attrs={'units':'micromole per cubic meter','description':'Surface concentration of nitrate from World Ocean Atlas'}
+array['Silicates'].attrs={'units':'micromole per cubic meter','description':'Surface concentration of silicate from World Ocean Atlas'}
+array['Temperature'].attrs={'units':'degrees_celsius','description':'Sea surface temperature from World Ocean Atlas'}
+array['Iron'].attrs={'units':'micromole per cubic meter','description':'Surface concentration of dissolved iron coumpounds from the biogeochemical model PISCES'}
+array['CHL'].attrs={'units':'milligram per cubic meters','description':'Surface concentration of chlorophyll-a measured from satellite'}
+array['SLA'].attrs={'units':'meters','long_name':'Sea Level Anomaly','description':'Sea Level Anomaly measured from satellite'}
+array['PAR'].attrs={'units':'mole einstein per square meter per day','long_name':'Photosynthetically Available Radiance','description':'Surface light intensity measured from satellite'}
+array['Aerosol_thickness'].attrs={'units':'unitless','long_name':'Aerosol optical thickness','description':'Proxy for surface emission of Fe-rich aerosols measured from satellite'}
+array['DUWT001'].attrs={'units':'kilogram per square meter per second','long_name':'Wet Dust Deposition Bin 001','description':'Proxy for surface deposition of wet dust measured from satellite'}
+array['PSD_slope'].attrs={'units':'particles per liter per square micrometers','long_name':'Particle Size Distribution Slope','description':'Slope of the particle size distribution measured from satellite'}
+array['Picophytoplankton'].attrs={'units':'unitless','long_name':'Fraction of picophytoplankton','description':'Fraction of picophytoplankton measured from satellite'}
+array['Nanophytoplankton'].attrs={'units':'unitless','long_name':'Fraction of nanophytoplankton','description':'Fraction of nanophytoplankton measured from satellite'}
+array['Microphytoplankton'].attrs={'units':'unitless','long_name':'Fraction of microphytoplankton','description':'Fraction of microphytoplankton measured from satellite'}
+array.attrs={'creation':'Dataset generated on Sept 2023 by M. Dugenne', 'title':'Full environmental dataset used to predict the spectral biogeography of mesoplankton in the Global Ocean', 'summary':'This dataset represents the set of explanatory variables used to predict mesoplankton spectral biogeography as part of the Pelagic Sie Structure database project (https://pssdb.net)'} # add global attribute metadata
+print(array)
+array.to_netcdf('{}/Model_environment.nc'.format(str(path_to_input)))
 
 # Plot climatologies
 df_env_all = xr.open_dataset('{}/Model_environment.nc'.format(str(path_to_input))).to_dataframe().reset_index().dropna()#df_environement.dropna().reset_index(drop=True)
@@ -252,7 +252,7 @@ df_env_all['Longhurst_subarea'] = df_env_all.Longhurst_area.replace(longhurst_di
 df_env_all['Hemisphere'] = np.where(df_env_all.Latitude.astype(float)>0,'North','South')
 df_env_all['Region']=df_env_all.Study_area+'\n'+df_env_all.Longhurst_subarea
 df_env_all['month']=df_env_all.Datetime.str[5:]
-for var in ['PSD_slope', 'Picophytoplankton', 'Nanophytoplankton', 'Microphytoplankton', 'CHL', 'Temperature', 'PAR','AOU', 'Nitrates', 'Phosphates', 'Silicates', 'Iron', 'Aerosol_thickness', 'DUWT001', 'SLA', 'FSLE', 'MLD']:
+for var in [ 'Iron', 'Aerosol_thickness', 'DUWT001']:
     var = var + '/1000' if var.split('/')[0] in '\t'.join(['Nitrates', 'Phosphates', 'Silicates']) else var  # Nutrients are expressed in cubic meters to integrate over depth
     axis_trans = 'log10' if var.split('/')[0] in '\t'.join(['CHL', 'Nitrates', 'Phosphates', 'Silicates', 'Iron','DUWT001']) else 'identity'  # 'sqrt' if var in '\t'.join(['Picophytoplankton', 'Nanophytoplankton', 'Microphytoplankton']) else 'identity'
     plot = (ggplot(df_env_all[(df_env_all.Longhurst_subarea.isin(['Equatorial-Upwellings']))]) +

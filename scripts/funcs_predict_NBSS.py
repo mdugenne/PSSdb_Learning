@@ -159,6 +159,17 @@ from itertools import compress
 import warnings
 warnings.filterwarnings('ignore', module='urllib3')
 
+# Define
+bins=np.power(2, np.arange(0, np.log2(100000) + 1 / 3, 1 / 3))  # Fixed size(um) bins used for UVP/EcoPart data. See https://ecopart.obs-vlfr.fr/. 1/3 ESD increments allow to bin particle of doubled biovolume in consecutive bins. np.exp(np.diff(np.log((1/6)*np.pi*(EcoPart_extended_bins**3))))
+
+df_bins = pd.DataFrame({'sizeClasses': pd.cut(bins, bins).categories.values,  # Define bin categories (um)
+                        'bin_widths': np.diff(bins),  # Define width of individual bin categories (um)
+                        'range_size_bin': np.concatenate(np.diff((1 / 6) * np.pi * (np.resize(
+                            np.append(bins[0], np.append(np.repeat(bins[1:-1], repeats=2), bins[len(bins) - 1])),
+                            (len(bins) - 1, 2)) ** 3), axis=1)),  # cubic micrometers
+                        'size_class_mid': stats.gmean(np.resize(
+                            np.append(bins[0], np.append(np.repeat(bins[1:-1], repeats=2), bins[len(bins) - 1])),
+                            (len(bins) - 1, 2)), axis=1)})  # Define geometrical mean of bin categories (um)
 
 ## Functions start here:
 
@@ -240,12 +251,7 @@ def ggplot_raster(dataframe,output_path,**kwargs):
                 geom_polygon(data=world_polygon, mapping=aes(x='Longitude', y='Latitude', group='Country'),fill='black',color='black') +
                 labs( x=r'Longitude ($^{\circ}$E)', y=r'Latitude ($^{\circ}$N)') +
                 guides(fill=guide_colourbar(barwidth=10,direction='horizontal',title_position='top'))+
-                theme(legend_position='bottom',panel_grid=element_blank(), panel_background=element_rect(fill='white'),
-                      panel_border=element_rect(color='#222222'),
-                      legend_title=element_text(family='serif', size=10), legend_text=element_text(family='serif', size=10),
-                      axis_title=element_text(family='serif',size=10), axis_text_x=element_text(family='serif',size=10),
-                      axis_text_y=element_text(family='serif',size=10, rotation=90),
-                      plot_background=element_rect(fill='white'))+
+                theme_paper+theme(legend_direction='horizontal',legend_position='bottom',legend_text=element_text(angle=0))+
                 coord_cartesian(expand=False))
         if len(kwargs_eval) > 0:
             for i in range(len(kwargs_eval)):
@@ -255,7 +261,7 @@ def ggplot_raster(dataframe,output_path,**kwargs):
         if len(output_path) > 0:
             path = Path(output_path).expanduser()
             print('Saving plot to', path, sep=' ')
-            plot.save(filename=path, dpi=300, verbose=False, bbox_inches='tight',width=5,height=3)
+            plot.save(filename=path, dpi=300, verbose=False, bbox_inches='tight',width=3,height=3)
         else:
             print('Printing plot. Save manually using the bottom icon')
             plot.draw(show=True)
@@ -805,7 +811,7 @@ def nbss_predict(df,selection={'PFT':'Mesophytoplankton'},var_x=['AOU', 'FSLE','
     if len(selection):
         df=df.query('&'.join(['({}=="{}")'.format(key,value) if isinstance(value,str) else '({}.isin({})==True)'.format(key,value) for key,value in selection.items()]))
     X,y=df.loc[df.dropna(subset=var_x+var_y).index,var_x],df.loc[df.dropna(subset=var_x+var_y).index,var_y].transform(lambda x: np.log10(x) if x.name in ['Min_size','Max_size'] else x)
-    seed=5
+    seed=5 # For reproducibility
     X_train, X_test, y_train, y_test = train_test_split(X,y, test_size=.2,random_state=seed)
     # create model instance
     model=xgb.XGBRegressor(n_estimators=100, max_depth=7, eta=0.1, subsample=0.7, colsample_bytree=0.8)
@@ -834,15 +840,15 @@ def nbss_predict(df,selection={'PFT':'Mesophytoplankton'},var_x=['AOU', 'FSLE','
         fig.savefig(fname='{}/Model_tree_{}.svg'.format(str(figures_path),'_'.join(['_'.join(selection) if isinstance(selection,list) else selection for selection in list(selection.values())])),limitsize=False, dpi=600, bbox_inches='tight')
     """
     # Save model into JSON format
-    Path(path_to_git / 'data' / 'NBSS_model' / 'Predictions_output').mkdir(exist_ok=True)
+    Path(path_to_git / 'data' / 'Model' / 'Model_output').mkdir(exist_ok=True)
     print('Saving {} tree model to {}'.format('_'.join(['_'.join(selection) if isinstance(selection,list) else selection for selection in list(selection.values())]), str(Path(path_to_git / 'data' / 'NBSS_model' / 'Predictions_output'))))
-    model.save_model("{}/xgboost_{}.json".format(Path(path_to_git/ 'data' / 'NBSS_model' /'Predictions_output'),'_'.join(['_'.join(selection) if isinstance(selection,list) else selection for selection in list(selection.values())])))
-    # make predictions for test data
+    model.save_model("{}/xgboost_{}.json".format(Path(path_to_git/ 'data' / 'Model' /'Model_output'),'_'.join(['_'.join(selection) if isinstance(selection,list) else selection for selection in list(selection.values())])))
+    # make predictions for test data to check the coefficient of determination
     test_pred = model.predict(X_test)
     sse = np.sum((test_pred - y_test) ** 2)
     sst = np.sum((y_test - np.mean(y_test)) ** 2)
     rsquared = 1 - sse / sst
-
+    y_pred = model.predict(X)
     df_pred=pd.merge(y_test.transform(lambda x: 10**x if x.name in ['Min_size','Max_size'] else x).melt(value_vars=y.columns,value_name='observed_value'),pd.DataFrame({y_test.columns[0]:test_pred[:,[0]].flatten(),y_test.columns[1]:test_pred[:,[1]].flatten(),y_test.columns[2]:10**test_pred[:,[2]].flatten(),y_test.columns[3]:10**test_pred[:,[3]].flatten()}).melt(value_vars=y_test.columns,value_name='predicted_value'), left_index=True, right_index=True).rename(columns={'variable_x':'variable'}).drop(columns='variable_y').assign(set='test')
     df_pred = pd.concat([df_pred,pd.merge(y.transform(lambda x: 10 ** x if x.name in ['Min_size', 'Max_size'] else x).melt(value_vars=y.columns,value_name='observed_value'),pd.DataFrame({y.columns[0]: y_pred[:, [0]].flatten(), y.columns[1]: y_pred[:, [1]].flatten(),y.columns[2]: 10 ** y_pred[:, [2]].flatten(),y.columns[3]: 10 ** y_pred[:, [3]].flatten()}).melt(value_vars=y.columns,value_name='predicted_value'),left_index=True, right_index=True).rename(columns={'variable_x': 'variable'}).drop(columns='variable_y').assign(set='all')],axis=0)
 
@@ -851,46 +857,30 @@ def nbss_predict(df,selection={'PFT':'Mesophytoplankton'},var_x=['AOU', 'FSLE','
     plot=(ggplot(df_pred[df_pred.observed_value!=0])+facet_wrap('~variable',ncol=1,scales='free')+geom_abline(slope=1,intercept=0)+geom_point(mapping=aes(x='observed_value',y='predicted_value',fill='set'), stat='identity')+labs(y=r'Predictions', x=r'Observations',size='') +
          geom_text(data= df_pred_summary,mapping=aes(x='x',y='y',label='r2'),ha='left',va='top')+
          scale_fill_manual(values={'test':'black','all':'black'})+
-         theme( panel_grid=element_blank(),legend_position='bottom',
-            panel_background=element_rect(fill='white'),legend_background=element_rect(fill='white'),
-            strip_background=element_rect(fill='white'),
-            panel_border=element_rect(color='#222222'),
-            legend_title=element_text(family='serif', size=10), legend_text=element_text(family='serif', size=10,rotation=0),
-            axis_title=element_text(family='serif', size=10,linespacing=1), axis_text_x=element_text(family='serif',ha='right', size=10,linespacing=0,rotation=0),
-            axis_text_y=element_text(family='serif', size=10, rotation=90,linespacing=1),
-            plot_background=element_rect(fill='white'))).draw(show=False, return_ggplot=True)
-    plot[0].set_size_inches(3,10)
+         theme_paper).draw(show=True)
+    plot.set_size_inches(3,10)
     if len(str(figures_path)):
         figures_path.expanduser().mkdir(exist_ok=True)
         print('Saving {} test set regression to {}'.format('_'.join(['_'.join(selection) if isinstance(selection,list) else selection for selection in list(selection.values())]),str(Path(path_to_git / 'Data' / 'NBSS' / 'Predictions_output'))))
-        plot[0].savefig(fname='{}/Model_predictions_vs_observations_{}.svg'.format(str(figures_path),'_'.join(['_'.join(selection) if isinstance(selection,list) else selection for selection in list(selection.values())])),limitsize=False, dpi=600, bbox_inches='tight')
+        plot.savefig(fname='{}/Model_predictions_vs_observations_{}.svg'.format(str(figures_path),'_'.join(['_'.join(selection) if isinstance(selection,list) else selection for selection in list(selection.values())])),limitsize=False, dpi=600, bbox_inches='tight')
 
     # retrieve performance metrics
     metrics = model.evals_result()
     df_metrics=pd.DataFrame({'Epochs':np.arange(len(np.exp(metrics['validation_0']['logloss']))),'Loss':np.exp(metrics['validation_0']['logloss'])})
     perm_importance = permutation_importance(model, X_test, y_test)
     dict_gain=dict(zip(model.feature_names_in_,model.feature_importances_))#
-    dict_gain=dict(zip(model.feature_names_in_,np.fmax(0,perm_importance.importances_mean)))
+    #dict_gain=dict(zip(model.feature_names_in_,np.fmax(0,perm_importance.importances_mean)))
     #dict_gain=model.get_booster().get_score(importance_type='total_gain')
-    if any(pd.Series(dict_gain.keys()).isin(['time','coordinates_latitude','coordinates_longitude'])):
-        dict_gain=project(dict_gain, list(filter(lambda var: var not in ['time','coordinates_latitude','coordinates_longitude'], var_x)))
     features_importance=dict(zip(list(dict_gain.keys()),np.array(list(dict_gain.values()))/np.array(list(dict_gain.values())).sum()))
     df_predictors=pd.DataFrame.from_dict(model.get_booster().get_score(importance_type='gain'),orient='index').reset_index().rename(columns={'index':'variable',0:'scores'}).sort_values(['scores'],ascending=False)
     df_predictors=pd.merge(pd.DataFrame.from_dict(features_importance,orient='index').reset_index().rename(columns={'index':'variable',0:'scores_permutation'}),pd.DataFrame.from_dict(dict(zip(var_x,model.feature_importances_)),orient='index').reset_index().rename(columns={'index':'variable',0:'scores_gain'}),how='inner',on='variable').sort_values(['scores_permutation'],ascending=False)
     plot=(ggplot(df_predictors)+scale_x_discrete(limits=df_predictors.variable.values)+geom_col(mapping=aes(x='variable',y='scores_permutation+1e-02'),fill='black', stat='identity')+labs(y=r'Feature importances', x=r'',size='') +
-         theme( panel_grid=element_blank(),legend_position='bottom',
-            panel_background=element_rect(fill='white'),legend_background=element_rect(fill='white'),
-            strip_background=element_rect(fill='white'),
-            panel_border=element_rect(color='#222222'),
-            legend_title=element_text(family='serif', size=10), legend_text=element_text(family='serif', size=10,rotation=0),
-            axis_title=element_text(family='serif', size=10,linespacing=1), axis_text_x=element_text(family='serif',ha='right', size=10,linespacing=0,rotation=45),
-            axis_text_y=element_text(family='serif', size=10, rotation=0,linespacing=1),
-            plot_background=element_rect(fill='white'))).draw(show=False, return_ggplot=True)
-    plot[0].set_size_inches(6,3)
+         theme_paper).draw(show=True)
+    plot.set_size_inches(6,3)
     if len(str(figures_path)):
         figures_path.expanduser().mkdir(exist_ok=True)
         print('Saving {} features importance to {}'.format('_'.join(['_'.join(selection) if isinstance(selection,list) else selection for selection in list(selection.values())]),str(Path(path_to_git / 'Data' / 'NBSS' / 'Predictions_output'))))
-        plot[0].savefig(fname='{}/Model_scores_{}.svg'.format(str(figures_path),'_'.join(['_'.join(selection) if isinstance(selection,list) else selection for selection in list(selection.values())])),limitsize=False, dpi=600, bbox_inches='tight')
+        plot.savefig(fname='{}/Model_scores_{}.svg'.format(str(figures_path),'_'.join(['_'.join(selection) if isinstance(selection,list) else selection for selection in list(selection.values())])),limitsize=False, dpi=600, bbox_inches='tight')
 
     return model, df_pred_summary
 
