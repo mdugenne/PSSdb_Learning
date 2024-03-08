@@ -1,0 +1,13 @@
+# Template to create a configuration masterfile containing confidential credentials
+# Replace quotation with appropriate credentials
+# Save as Configuration_masterfile.yaml (file on .gitignore, won't be tracked/visible on Github)
+ecotaxa_user : ''
+ecotaxa_pass : ''
+NASA_user : ''
+NASA_token : ''
+NASA_appkey : ''
+NASA_pass : ''
+Copernicus_user : ''
+Copernicus_pass : ''
+AVISO_user : ''
+AVISO_pass : ''
