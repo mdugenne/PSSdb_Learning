@@ -1,4 +1,4 @@
-### <div style="clear: both;"> <img src="figures/readme/pssdb-logo.png" alt= “” align="center" width="10" height="10" > <font size= “1”>Machine learning models applied to the Pelagic Size Structure database ([PSSdb](https://pssdb.net/ ""))</font></div>  
+### <div style="clear: both;"> <img src="figures/readme/pssdb-logo.png" alt= “” align="center" width="40" height="40" > <font size= “1”>Machine learning models applied to the Pelagic Size Structure database ([PSSdb](https://pssdb.net/ ""))</font></div>  
 ###### Mathilde Dugenne, Jessica Luo, Rainer Kiko, Marco Corrales-Ugalde, Todd O'Brien, Charles Stock, Jean-Olivier Irisson, Lars Stemmann, Fabien Lombard
 <a href="mailto:contact@pssdb.net">Contact us</a>
 
@@ -65,7 +65,7 @@ Lastly, each spectrum is fitted with a log-linear regression to obtain estimates
 <div>
 <p style='padding:-0.1em;line-height:1.0em; margin-left:0.7em; display: inline-block;'>
 
-<img clear="both" src="https://github.com/mdugenne/PSSdb_Learning/tree/main/figures/readme/PSSdb-workflow.png" width="130%" style="  float:right; padding:0.7em"/>
+<img clear="both" src="https://github.com/mdugenne/PSSdb_Learning/blob/main/figures/readme/PSSdb-workflow.png" width="130%" style="  float:right; padding:0.7em"/>
 <br><br><br><br><br><br>
 
 </p>
@@ -85,7 +85,7 @@ obtain NBSS parameters (intercept, slope, coefficient of determination and size 
 <div>
 <p style='padding:-0.1em;line-height:1.0em; margin-left:0.7em; display: inline-block;'>
 
-<img clear="both" src="https://github.com/mdugenne/PSSdb_Learning/tree/main/figures/readme/PSSdb_Learning-step0.png" width="130%" style="  float:right; padding:0.7em"/>
+<img clear="both" src="https://github.com/mdugenne/PSSdb_Learning/blob/main/figures/readme/PSSdb_Learning-step0.png" width="130%" style="  float:right; padding:0.7em"/>
 <br><br><br><br><br><br>
 
 </p>
@@ -105,7 +105,7 @@ python ~/GIT/PSSdb_Learning/scripts/1_merge_predictors.py
 
 <div>
 <p style='padding:-0.1em;line-height:1.0em; margin-left:0.7em; display: inline-block;'>
-<img src="https://github.com/mdugenne/PSSdb_Learning/tree/main/figures/readme/PSSdb_Learning-step1.png" width="100%" style="  float:right; padding:0.7em"/>
+<img src="https://github.com/mdugenne/PSSdb_Learning/blob/main/figures/readme/PSSdb_Learning-step1.png" width="100%" style="  float:right; padding:0.7em"/>
 <font size="1">
 </font>
 </p>
@@ -128,7 +128,7 @@ python ~/GIT/PSSdb_Learning/scripts/2_train_model.py
 <div>
 <p style='padding:-0.1em;line-height:1.0em; margin-left:0.7em; display: inline-block;'>
 
-<img src="https://github.com/mdugenne/PSSdb_Learning/tree/main/figures/readme/PSSdb_Learning-step2.png" width="100%" style="  float:right; padding:0.7em"/>
+<img src="https://github.com/mdugenne/PSSdb_Learning/blob/main/figures/readme/PSSdb_Learning-step2.png" width="100%" style="  float:right; padding:0.7em"/>
 <br><br>
 <font size="2">
 
@@ -153,7 +153,7 @@ python ~/GIT/PSSdb_Learning/scripts/3_check_model.py
 <div>
 <p style='padding:-0.1em;line-height:1.0em; margin-left:0.7em; display: inline-block;'>
 <font size="2"></font>
-<img src="https://github.com/mdugenne/PSSdb_Learning/tree/main/figures/readme/PSSdb_Learning-step3.png" width="100%" style="  float:right; padding:0.7em"/>
+<img src="https://github.com/mdugenne/PSSdb_Learning/blob/main/figures/readme/PSSdb_Learning-step3.png" width="100%" style="  float:right; padding:0.7em"/>
 <br><br>
 </p>
 </div>
